@@ -149,7 +149,7 @@ function checkoutHandler() {
 
                     if (data.is_paid) {
                         clearInterval(this.pollInterval);
-                        window.location.href = `/checkout/success/${this.orderNumber}`;
+                        window.location.href = `/orders/${this.orderNumber}`;
                     } else if (data.status === 'failed') {
                         clearInterval(this.pollInterval);
                         this.showModal = false;
