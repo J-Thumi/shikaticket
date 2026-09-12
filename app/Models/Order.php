@@ -15,6 +15,7 @@ class Order extends Model
 
     protected $fillable = [
         'order_number',
+        'reservation_id',
         'event_id',
         'user_id',
         'customer_name',
@@ -31,6 +32,11 @@ class Order extends Model
         'total_amount' => 'decimal:2',
         'custom_responses' => 'array',
     ];
+
+    public function reservation(): BelongsTo
+    {
+        return $this->belongsTo(TicketReservation::class);
+    }
 
     protected static function boot()
     {

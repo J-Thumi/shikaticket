@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class TicketReservation extends Model
 {
@@ -30,6 +31,11 @@ class TicketReservation extends Model
     public function ticketType(): BelongsTo
     {
         return $this->belongsTo(TicketType::class);
+    }
+
+    public function order(): HasOne
+    {
+        return $this->hasOne(Order::class);
     }
 
     public function scopeExpired(Builder $query): Builder

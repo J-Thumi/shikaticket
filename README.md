@@ -1,58 +1,190 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Ticketing & Payment Platform (Laravel + M-Pesa Bitika Integration)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A high-concurrency event ticketing and checkout system built on Laravel. The platform features an asynchronous M-Pesa payment engine powered by **Bitika**, built-in race-condition protections for ticket inventory, and a secure webhook fulfillment engine for issuing tickets upon settlement.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## What It Is
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+This platform enables organizers to publish events, manage ticket types, and process ticket sales seamlessly. Rather than relying on synchronous payment gateways where connection drops or standard USSD delays can break checkout flows, this application decouples order creation, payment initiation, and ticket issuance.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Key Capabilities
 
-## Learning Laravel
+* **Atomic Ticket Reservations:** Prevents double-booking during traffic surges using temporary inventory locks before payment.
+* **Asynchronous M-Pesa STK Push:** Integrated via `BitikaPaymentService` using non-blocking payment initiation.
+* **Webhook Fulfillment:** Decoupled order fulfillment driven by signed webhooks from Bitika.
+* **Audited Transaction History:** Multi-gateway payment tracking mapping payment lifecycle status (`initiated`, `successful`, `failed`).
+* **Individual QR Code Tickets:** Automatic generation of valid individual tickets upon order confirmation.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+---
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## The Why Behind It
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Selling tickets online during high-demand event launches introduces two main challenges:
 
-## Agentic Development
+1. **Race Conditions & Overselling:** Standard `decrement()` calls during checkout can allow multiple users to purchase the last remaining ticket simultaneously.
+2. **M-Pesa Checkout Latency:** M-Pesa STK Push prompts rely on mobile network delivery and prompt user interaction. Synchronous HTTP requests during checkout often lead to server timeouts or abandoned sessions.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### Architectural Solution
 
-```bash
-composer require laravel/boost --dev
+To solve these challenges, this system uses:
 
-php artisan boost:install
+* **Two-Phase Inventory Commitment:** A `TicketReservation` system locks ticket inventory for a limited time (`expires_at`). Reserved inventory converts to `sold_quantity` only upon successful payment, returning to the available pool if the reservation times out or fails.
+* **Idempotent STK Push Triggers:** Every payment request generates a unique `idempotency_key` prior to invoking Bitika, making payment initiation retriable without duplicate billing.
+* **Asynchronous Webhook Processing:** The user receives immediate feedback that the push prompt has been dispatched, while order status updates and ticket generation happen in the background via webhooks.
+
+---
+
+## How It Works
+
+```
+┌──────────┐          ┌───────────┐          ┌──────────────┐          ┌──────────────┐
+│  Client  │          │ App / Web │          │ Bitika API   │          │ M-Pesa / User│
+└────┬─────┘          └─────┬─────┘          └──────┬───────┘          └──────┬───────┘
+     │   1. Reserve Ticket  │                       │                         │
+     │─────────────────────>│                       │                         │
+     │   2. Redirect to     │                       │                         │
+     │      Checkout        │                       │                         │
+     │<─────────────────────│                       │                         │
+     │                      │                       │                         │
+     │   3. POST /process   │                       │                         │
+     │─────────────────────>│                       │                         │
+     │                      │ 4. STK Push Request   │                         │
+     │                      │──────────────────────>│                         │
+     │                      │                       │ 5. Trigger STK Push     │
+     │                      │                       │────────────────────────>│
+     │                      │ 6. Return Transaction │                         │
+     │                      │    Code & "pending"   │                         │
+     │                      │<──────────────────────│                         │
+     │ 7. Return JSON OK    │                       │                         │
+     │<─────────────────────│                       │                         │
+     │                      │                       │ 8. Enter M-Pesa PIN     │
+     │                      │                       │<────────────────────────│
+     │                      │ 9. Webhook Callback   │                         │
+     │                      │    (status: fulfilled)│                         │
+     │                      │<──────────────────────│                         │
+     │                      │                       │                         │
+     │                      │ 10. Issue Tickets &   │                         │
+     │                      │     Finalize Stock    │                         │
+
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+1. **Reservation Phase:** The user selects ticket quantities. The system creates a `TicketReservation` tied to the user session, incrementing `reserved_quantity`.
+2. **Initiation Phase:** When the user enters their phone number and submits checkout:
+* A unique UUID `idempotency_key` is generated.
+* An `Order` is recorded in `pending` status.
+* `BitikaPaymentService::collect()` triggers the M-Pesa prompt.
+* A `Payment` row is stored with `status = 'initiated'` and the Bitika `transaction_reference`.
 
-## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+3. **Fulfillment Phase:** Once the payment completes, Bitika sends a POST request to `/api/webhooks/bitika`. The system updates the `Payment` to `successful`, sets the `Order` to `paid`, decrements `reserved_quantity`, increments `sold_quantity`, and issues ticket records.
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Database Schema Overview
 
-## Security Vulnerabilities
+```
+ [events] ───< [ticket_types] ───< [ticket_reservations]
+    │                │
+    │                └───< [tickets]
+    │                        │
+    └───────────────────< [orders] ───< [payments]
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```
+
+* **`orders`**: Stores customer details, total amount, order status (`pending`, `paid`, `failed`, `cancelled`, `refunded`), and `idempotency_key`.
+* **`payments`**: Logs transactions per order, tracking `gateway` (`bitika`), `transaction_reference`, `amount`, `status` (`initiated`, `successful`, `failed`), and raw webhook payloads.
+* **`ticket_reservations`**: Manages temporary holds on tickets before payment completes.
+* **`tickets`**: Individual QR ticket records issued to customers after successful payment.
+
+---
+
+## Setup Instructions
+
+### Prerequisites
+
+* PHP >= 8.2
+* Composer
+* MySQL / MariaDB
+* Bitika API credentials
+
+### Step 1: Clone and Install Dependencies
+
+```bash
+git clone https://github.com/J-Thumi/shikaticket
+cd ticketing-platform
+composer install
+npm install && npm run build
+
+```
+
+### Step 2: Environment Configuration
+
+Copy `.env.example` to `.env`:
+
+```bash
+cp .env.example .env
+php artisan key:generate
+
+```
+
+Configure your database and Bitika credentials inside `.env`:
+
+```env
+APP_URL=http://localhost:8000
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=ticketing_db
+DB_USERNAME=root
+DB_PASSWORD=secret
+
+# Bitika Payment Configuration
+BITIKA_API_BASE_URL=https://api.bitika.co
+BITIKA_API_KEY=your_bitika_api_key
+BITIKA_LIGHTNING_ADDRESS=your_address@bitika
+
+```
+
+### Step 3: Run Database Migrations
+
+```bash
+php artisan migrate
+
+```
+
+### Step 4: Expose Webhook Endpoint locally (Development)
+
+If developing locally, use `ngrok` or `expose` to route webhook callbacks from Bitika to your local environment:
+
+```bash
+ngrok http 8000
+
+```
+
+Update your `.env` `APP_URL` with your temporary public URL so Bitika callbacks reach your environment:
+
+```env
+APP_URL=https://your-ngrok-subdomain.ngrok-free.app
+
+```
+
+---
+
+## API Routes Overview
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/events/{event}/reserve` | Locks ticket quantity and creates a `TicketReservation`. |
+| `GET` | `/checkout/{reservation}` | Renders checkout view with active reservation details. |
+| `POST` | `/checkout/{reservation}/process` | Initiates Bitika STK push and creates a pending `Order`. |
+| `GET` | `/orders/{order}/status` | Endpoint for polling the payment status. |
+| `POST` | `/api/webhooks/bitika` | Webhook endpoint receiving settlement status from Bitika. |
+| `GET` | `/orders/{order}/success` | Renders order success page with issued tickets. |
+
+---
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is open-source software licensed under the [MIT license](https://www.google.com/search?q=LICENSE).

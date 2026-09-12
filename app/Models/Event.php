@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
@@ -29,8 +28,8 @@ class Event extends Model
 
     protected $casts = [
         'start_date' => 'datetime',
-        'end_date' => 'datetime',
-        'settings' => 'array',
+        'end_date'   => 'datetime',
+        'settings'   => 'array',
     ];
 
     public function organizer(): BelongsTo
@@ -62,5 +61,30 @@ class Event extends Model
     public function scopeUpcoming(Builder $query): Builder
     {
         return $query->where('start_date', '>=', now());
+    }
+
+    // Dynamic Accessors for the View
+    public function getDateAttribute(): string
+    {
+        return $this->start_date ? $this->start_date->format('D, M j') : '';
+    }
+
+    public function getDateLabelAttribute(): string
+    {
+        return $this->start_date ? $this->start_date->format('D, M j · g:i A') : '';
+    }
+
+    public function getMinPriceAttribute(): float
+    {
+        return (float) ($this->ticketTypes->where('is_active', true)->min('price') ?? 0);
+    }
+
+    public function getIsSellingFastAttribute(): bool
+    {
+        return $this->ticketTypes->contains(function ($ticket) {
+            if ($ticket->total_quantity <= 0) return false;
+            $remaining = $ticket->total_quantity - ($ticket->sold_quantity + $ticket->reserved_quantity);
+            return ($remaining / $ticket->total_quantity) < 0.20; // Less than 20% tickets remaining
+        });
     }
 }
