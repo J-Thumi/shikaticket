@@ -7,7 +7,7 @@
 
         <!-- Camera Viewport / Feedback Canvas -->
         <div class="relative bg-black rounded-3xl border-2 border-slate-700 overflow-hidden aspect-square mb-6">
-            <video x-ref="video" class="w-full h-full object-cover"></video>
+            <div id="video" class="w-full h-full object-cover"></div>
             
             <!-- Scan Status Overlay -->
             <div x-show="status !== 'idle'" x-cloak 
