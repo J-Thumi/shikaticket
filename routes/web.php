@@ -21,6 +21,8 @@ Route::post('/events/{event}/reserve', [CheckoutController::class, 'reserve'])->
 // Checkout Flow
 Route::get('/checkout/{reservation}', [CheckoutController::class, 'show'])->name('checkout.show');
 Route::post('/checkout/{reservation}/process', [CheckoutController::class, 'process'])->name('checkout.process');
+Route::get('/checkout/status/{order:order_number}', [CheckoutController::class, 'status'])
+    ->name('checkout.status');
 Route::get('/orders/{order:order_number}', [CheckoutController::class, 'success'])->name('orders.success');
 
 // Attendee Ticket Wallet
