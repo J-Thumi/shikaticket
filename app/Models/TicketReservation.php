@@ -35,7 +35,7 @@ class TicketReservation extends Model
 
     public function order(): HasOne
     {
-        return $this->hasOne(Order::class);
+        return $this->hasOne(Order::class, 'reservation_id');
     }
 
     public function scopeExpired(Builder $query): Builder
