@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ?? 'Organizer Portal - ShikaTicket' }}</title>
+    <link rel="icon" href="{{ asset('images/ticket.png') }}" type="image/x-icon">
 
     <!-- Google Fonts & Tailwind Play CDN -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
