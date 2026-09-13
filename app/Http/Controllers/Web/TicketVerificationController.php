@@ -28,10 +28,24 @@ class TicketVerificationController extends Controller
             return response()->json(['result' => 'invalid', 'message' => 'INVALID / TAMPERED TICKET'], 400);
         }
 
-        $ticket = Ticket::with(['order', 'ticketType'])->where('ticket_code', $validated['ticket_code'])->first();
+        // Eager load event to inspect event ownership
+        $ticket = Ticket::with(['order', 'ticketType.event'])
+            ->where('ticket_code', $validated['ticket_code'])
+            ->first();
 
         if (! $ticket) {
             return response()->json(['result' => 'invalid', 'message' => 'TICKET NOT FOUND'], 404);
+        }
+
+        // 1. Check if the authenticated user has an organizer profile
+        $organizer = auth()->user()->organizer;
+
+        // 2. Prevent scanning tickets from other organizers' events
+        if (! $organizer || $ticket->ticketType->event->organizer_id !== $organizer->id) {
+            return response()->json([
+                'result' => 'invalid',
+                'message' => 'UNAUTHORIZED: TICKET BELONGS TO ANOTHER EVENT',
+            ], 403);
         }
 
         if ($ticket->status === 'used') {
