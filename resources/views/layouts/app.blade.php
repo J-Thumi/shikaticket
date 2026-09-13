@@ -84,12 +84,22 @@
             <!-- Desktop Navigation Actions -->
             <div class="hidden md:flex items-center gap-3">
                 @auth
-                    <a href="{{ route('scanner.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-ink bg-soft hover:bg-line rounded-xl transition">
-                        <svg class="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                        Entry Scanner
-                    </a>
+                    {{-- Visible ONLY to Organizers --}}
+                    @if (Auth::user()->organizer)
+                        <a href="{{ route('organizer.dashboard') }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold text-ink bg-white border border-line hover:bg-soft rounded-xl transition shadow-sm">
+                            <svg class="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                            </svg>
+                            Dashboard
+                        </a>
+
+                        <a href="{{ route('scanner.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-ink bg-soft hover:bg-line rounded-xl transition">
+                            <svg class="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Entry Scanner
+                        </a>
+                    @endif
 
                     <!-- User Profile Dropdown -->
                     <div class="relative" @click.away="profileDropdownOpen = false">
@@ -104,18 +114,23 @@
                         </button>
 
                         <div x-show="profileDropdownOpen" 
-                             x-cloak
-                             x-transition:enter="transition ease-out duration-100"
-                             x-transition:enter-start="opacity-0 scale-95"
-                             x-transition:enter-end="opacity-100 scale-100"
-                             x-transition:leave="transition ease-in duration-75"
-                             x-transition:leave-start="opacity-100 scale-100"
-                             x-transition:leave-end="opacity-0 scale-95"
-                             class="absolute right-0 mt-2 w-52 py-2 bg-white border border-line rounded-2xl shadow-xl z-50">
+                            x-cloak
+                            x-transition:enter="transition ease-out duration-100"
+                            x-transition:enter-start="opacity-0 scale-95"
+                            x-transition:enter-end="opacity-100 scale-100"
+                            x-transition:leave="transition ease-in duration-75"
+                            x-transition:leave-start="opacity-100 scale-100"
+                            x-transition:leave-end="opacity-0 scale-95"
+                            class="absolute right-0 mt-2 w-52 py-2 bg-white border border-line rounded-2xl shadow-xl z-50">
                             <div class="px-4 py-2 border-b border-line">
                                 <p class="text-[11px] font-medium text-muted">Signed in as</p>
                                 <p class="text-xs font-bold text-ink truncate">{{ Auth::user()->email ?? '' }}</p>
                             </div>
+                            @if (Auth::user()->organizer)
+                                <a href="{{ route('organizer.dashboard') }}" class="block px-4 py-2.5 text-xs font-bold text-ink hover:bg-soft transition">
+                                    Organizer Workspace
+                                </a>
+                            @endif
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button type="submit" class="w-full text-left px-4 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 transition">
@@ -152,8 +167,17 @@
             <a href="{{ route('events.index') }}" class="block px-3 py-2 rounded-lg text-sm font-bold text-ink hover:bg-soft">Explore Events</a>
             <a href="#" class="block px-3 py-2 rounded-lg text-sm font-bold text-ink hover:bg-soft">Categories</a>
             <a href="#" class="block px-3 py-2 rounded-lg text-sm font-bold text-ink hover:bg-soft">Locations</a>
+            
             @auth
-                <a href="{{ route('scanner.index') }}" class="block px-3 py-2 rounded-lg text-sm font-bold text-accent hover:bg-soft">Entry Scanner</a>
+                @if (Auth::user()->organizer)
+                    <a href="{{ route('organizer.dashboard') }}" class="block px-3 py-2 rounded-lg text-sm font-bold text-ink hover:bg-soft">
+                        Organizer Dashboard
+                    </a>
+                    <a href="{{ route('scanner.index') }}" class="block px-3 py-2 rounded-lg text-sm font-bold text-accent hover:bg-soft">
+                        Entry Scanner
+                    </a>
+                @endif
+                
                 <form method="POST" action="{{ route('logout') }}" class="pt-2 border-t border-line">
                     @csrf
                     <button type="submit" class="w-full text-left px-3 py-2 rounded-lg text-sm font-bold text-rose-600 hover:bg-rose-50">
