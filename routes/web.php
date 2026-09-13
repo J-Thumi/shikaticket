@@ -32,7 +32,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // Entry Staff Scanner App
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth','organizer'])->group(function () {
     Route::get('/scanner', [TicketVerificationController::class, 'index'])->name('scanner.index');
     Route::post('/scanner/verify', [TicketVerificationController::class, 'verify'])->name('scanner.verify');
 });
@@ -54,13 +54,13 @@ Route::middleware('auth')->group(function () {
 });
 
 // Organizer profile onboarding
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth','organizer'])->group(function () {
     Route::get('/organizer/create', [OrganizerController::class, 'create'])->name('organizer.create');
     Route::post('/organizer', [OrganizerController::class, 'store'])->name('organizer.store');
 });
 
 // Organizer Backstage
-Route::middleware(['auth'])->prefix('organizer')->name('organizer.')->group(function () {
+Route::middleware(['auth','organizer'])->prefix('organizer')->name('organizer.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Event Routes
@@ -75,5 +75,3 @@ Route::middleware(['auth'])->prefix('organizer')->name('organizer.')->group(func
     // Reports Route
     Route::get('/reports', [WebReportController::class, 'index'])->name('reports.index');
 });
-
-Route::post('/webhooks/bitika', [\App\Http\Controllers\Web\BitikaWebhookController::class, 'handle'])->name('webhooks.bitika');
