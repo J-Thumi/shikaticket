@@ -69,13 +69,8 @@
                     <a href="{{ route('events.index') }}" class="hover:text-ink transition-colors">
                         Explore Events
                     </a>
-                    <a href="#" class="hover:text-ink transition-colors">
-                        Categories
-                    </a>
-                    <a href="#" class="hover:text-ink transition-colors">
-                        Locations
-                    </a>
-                    <a href="#" class="hover:text-ink transition-colors">
+                    
+                    <a href="{{ route('tickets.index') }}" class="hover:text-ink transition-colors {{ request()->routeIs('tickets.*') ? 'text-ink font-bold' : '' }}">
                         My Tickets
                     </a>
                 </div>
@@ -165,8 +160,7 @@
         <!-- Mobile Navigation Drawer -->
         <div x-show="mobileMenuOpen" x-cloak class="md:hidden border-b border-line bg-paper px-4 pt-3 pb-5 space-y-3 shadow-lg">
             <a href="{{ route('events.index') }}" class="block px-3 py-2 rounded-lg text-sm font-bold text-ink hover:bg-soft">Explore Events</a>
-            <a href="#" class="block px-3 py-2 rounded-lg text-sm font-bold text-ink hover:bg-soft">Categories</a>
-            <a href="#" class="block px-3 py-2 rounded-lg text-sm font-bold text-ink hover:bg-soft">Locations</a>
+            
             
             @auth
                 @if (Auth::user()->organizer)
