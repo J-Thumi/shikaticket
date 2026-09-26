@@ -46,7 +46,7 @@ class BitikaWebhookController extends Controller
                 ]);
                 if ($order->marketer_id && $order->marketer) {
                     $commission_amount = $order->marketer->calculateCommission($order->total_amount);
-                    $order->update(['commisssion_amount' => $commission_amount]);
+                    $order->update(['commission_amount' => $commission_amount]);
                 }
                 $order->update(['status' => 'paid']);                
 
