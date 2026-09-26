@@ -17,6 +17,12 @@ return [
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],
+    
+    'blink' => [
+        'endpoint' => env('BLINK_GRAPHQL_ENDPOINT', 'https://api.blink.sv/graphql'),
+        'api_key' => env('BLINK_API_KEY'),
+        'wallet_id' => env('BLINK_BTC_WALLET_ID'),
+    ],
 
     'bitika' => [
         'base_url' => env(
