@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
-
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Event extends Model
 {
     use HasFactory;
@@ -32,6 +32,13 @@ class Event extends Model
         'settings'   => 'array',
     ];
 
+    public function marketers(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Marketer::class,
+            'event_marketer'
+        )->withTimestamps();
+    }
     public function organizer(): BelongsTo
     {
         return $this->belongsTo(Organizer::class);

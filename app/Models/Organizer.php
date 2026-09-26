@@ -32,4 +32,8 @@ class Organizer extends Model
     {
         return $this->hasMany(Event::class);
     }
+    public function marketers(): HasMany
+    {
+        return $this->hasMany(Marketer::class);
+    }
 }

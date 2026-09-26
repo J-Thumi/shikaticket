@@ -26,13 +26,24 @@ class Order extends Model
         'status',
         'idempotency_key',
         'custom_responses',
+        'marketer_id',
+        'commission_amount',
+        'is_commission_paid',
+        'commission_paid_at',
     ];
 
     protected $casts = [
         'total_amount' => 'decimal:2',
+        'commission_amount' => 'decimal:2',
+        'is_commission_paid' => 'boolean',
+        'commission_paid_at' => 'datetime',
         'custom_responses' => 'array',
     ];
 
+    public function marketer(): BelongsTo
+    {
+        return $this->belongsTo(Marketer::class);
+    }
     public function reservation(): BelongsTo
     {
         return $this->belongsTo(TicketReservation::class);
@@ -66,5 +77,29 @@ class Order extends Model
     public function tickets(): HasMany
     {
         return $this->hasMany(Ticket::class);
+    }
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    public function scopePaid($query)
+    {
+        return $query->where('status', 'paid');
+    }
+
+    public function scopeFailed($query)
+    {
+        return $query->where('status', 'failed');
+    }
+
+    public function scopeCancelled($query)
+    {
+        return $query->where('status', 'cancelled');
+    }
+
+    public function scopeRefunded($query)
+    {
+        return $query->where('status', 'refunded');
     }
 }
