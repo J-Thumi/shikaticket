@@ -7,9 +7,11 @@
             
             <!-- Left: Event Meta & Banner -->
             <div class="lg:col-span-2 space-y-8">
-                <div class="rounded-2xl overflow-hidden border border-line bg-soft h-80 sm:h-96 shadow-sm">
-                    <img src="{{ $event->banner_url ?? 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=80' }}" class="w-full h-full object-cover">
-                </div>
+                <div class="rounded-2xl overflow-hidden border border-line bg-soft shadow-sm">
+        <img src="{{ $event->banner_url ?? 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=80' }}" 
+             alt="{{ $event->title }}"
+             class="w-full h-auto block">
+    </div>
 
                 <div>
                     <span class="text-xs font-extrabold text-accent uppercase tracking-wider">{{ $event->organizer->name }}</span>
