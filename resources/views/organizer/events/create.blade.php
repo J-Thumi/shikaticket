@@ -7,7 +7,7 @@
         <p class="text-xs text-muted mt-1">Configure event venue, timing schedules, and ticket pricing tiers.</p>
     </div>
 
-    <form action="{{ route('organizer.events.store') }}" method="POST" class="bg-white border border-line p-6 sm:p-10 rounded-2xl space-y-6 shadow-xl shadow-black/5">
+    <form action="{{ route('organizer.events.store') }}" enctype="multipart/form-data" method="POST" class="bg-white border border-line p-6 sm:p-10 rounded-2xl space-y-6 shadow-xl shadow-black/5">
         @csrf
 
         <!-- Event Title -->
@@ -55,9 +55,17 @@
 
         <!-- Banner Image URL -->
         <div class="space-y-1.5">
-            <label for="banner_url" class="block text-xs font-bold text-ink">Banner Image URL <span class="text-muted font-normal">(Optional)</span></label>
-            <input type="url" name="banner_url" id="banner_url" value="{{ old('banner_url') }}" placeholder="https://images.unsplash.com/photo-1505373877841-8d25f7d46678"
-                class="block w-full bg-paper border border-line rounded-xl px-3.5 py-2.5 text-ink text-xs font-medium placeholder-muted transition duration-200 focus:bg-white focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent">
+            <label for="banner" class="block text-xs font-bold text-ink">Banner Image <span class="text-muted font-normal">(Optional)</span></label>
+            <input type="file" name="banner" id="banner" accept="image/jpeg,image/png,image/webp"
+                class="block w-full bg-paper border border-line rounded-xl px-3.5 py-2.5 text-ink text-xs font-medium file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-accent/10 file:text-accent hover:file:bg-accent/20 transition duration-200 focus:bg-white focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent @error('banner') border-rose-500 focus:border-rose-500 focus:ring-rose-500/20 @enderror">
+            @error('banner')
+                <p class="text-xs font-bold text-rose-600 mt-1 flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {{ $message }}
+                </p>
+            @enderror
         </div>
 
         <!-- Description -->

@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class OrganizerEventController extends Controller
 {
@@ -30,7 +32,13 @@ class OrganizerEventController extends Controller
 
     public function store(Request $request)
     {
-        $organizer = auth()->user()->organizer;
+        Log::info("Creating a new event", $request->all());
+
+        $user = auth()->user();
+        
+        if (!$user->organizer) {
+            return back()->withErrors(['error' => 'Organizer profile not found for this account.']);
+        }
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -39,7 +47,7 @@ class OrganizerEventController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'description' => 'required|string',
-            'banner_url' => 'nullable|url',
+            'banner' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', // 2MB Max
 
             // Ticket Types Validation
             'tickets' => 'required|array|min:1',
@@ -47,12 +55,27 @@ class OrganizerEventController extends Controller
             'tickets.*.price' => 'required|numeric|min:0',
             'tickets.*.total_quantity' => 'required|integer|min:1',
             'tickets.*.min_per_order' => 'nullable|integer|min:1',
-            'tickets.*.max_per_order' => 'nullable|integer|min:1',
+            'tickets.*.max_per_order' => 'nullable|integer|min:1|gte:tickets.*.min_per_order',
         ]);
 
-        DB::transaction(function () use ($validated, $organizer) {
+        Log::info("validated", $validated);
+
+        // Handle File Upload
+        $bannerUrl = 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=1200'; // Default fallback
+
+        if ($request->hasFile('banner')) {
+            // 1. Store file in storage/app/public/banners
+            $path = $request->file('banner')->store('banners', 'public');
+            // 2. Storage::url($path) generates "/storage/banners/filename.jpg"
+            $appUrl = rtrim(config('app.url'), '/');
+            $bannerUrl = $appUrl . Storage::url($path);
+        }
+
+        Log::info("Validated request payload", $validated);
+
+        DB::transaction(function () use ($validated, $user, $bannerUrl) {
             $event = Event::create([
-                'organizer_id' => $organizer->id,
+                'organizer_id' => $user->organizer->id,
                 'title' => $validated['title'],
                 'slug' => Str::slug($validated['title']) . '-' . Str::random(5),
                 'venue_name' => $validated['venue_name'],
@@ -60,7 +83,7 @@ class OrganizerEventController extends Controller
                 'start_date' => $validated['start_date'],
                 'end_date' => $validated['end_date'],
                 'description' => $validated['description'],
-                'banner_url' => $validated['banner_url'] ?? 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=1200',
+                'banner_url' => $bannerUrl,
                 'status' => 'published',
             ]);
 
