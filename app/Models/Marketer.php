@@ -22,6 +22,7 @@ class Marketer extends Model
         'commission_percent',
         'fixed_commission',
         'commission_type',
+        'lightning_address',
         'is_active',
     ];
 
@@ -57,6 +58,33 @@ class Marketer extends Model
                     strtoupper(Str::random(8));
             }
         });
+    }
+
+    public function payouts(): HasMany
+    {
+        return $this->hasMany(MarketerPayout::class);
+    }
+
+    /**
+     * Total unpaid commission earned from paid orders
+     */
+    public function getUnpaidCommissionAttribute(): float
+    {
+        return (float) $this->orders()
+            ->where('status', 'paid')
+            ->where('is_commission_paid', false)
+            ->sum('commission_amount');
+    }
+
+    /**
+     * Total paid commission from orders
+     */
+    public function getPaidCommissionAttribute(): float
+    {
+        return (float) $this->orders()
+            ->where('status', 'paid')
+            ->where('is_commission_paid', true)
+            ->sum('commission_amount');
     }
 
     public function organizer(): BelongsTo
