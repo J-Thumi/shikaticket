@@ -223,6 +223,20 @@ class CheckoutController extends Controller
          * 8. Create the order.
          */
         try {
+            $referral = session('shikaticket_referral');
+
+            $marketerId = null;
+
+            if (
+                $referral &&
+                (int) $referral['event_id'] === (int) $ticketType->event_id
+            ) {
+                $marketerId = $referral['marketer_id'];
+            }
+            Log::info('Referral info for order', [
+                'reservation_id' => $reservation->id,
+                'marketer_id' => $marketerId,
+            ]);
             $order = Order::create([
                 'order_number' => 'ST-' . strtoupper(Str::random(8)),
 
@@ -249,6 +263,27 @@ class CheckoutController extends Controller
                 'custom_responses' =>
                     $validated['custom_responses'] ?? null,
             ]);
+
+            Log::info('Checkout order created successfully.', [
+                'order_id' => $order->id,
+                'reservation_id' => $reservation->id,
+                'marketer_id' => $marketerId,
+            ]);
+
+            if($referral && $marketerId) {
+                Log::info('This was a referral, associating order with marketer.', [
+                    'order_id' => $order->id,
+                    'marketer_id' => $marketerId,
+                ]);
+
+                $order->marketer_id = $marketerId;
+                $order->save();
+
+                Log::info('Let us forget the referral session data now that the order has been created.');
+                
+                session()->forget('shikaticket_referral');
+            }
+
         } catch (Exception $e) {
             Log::error('Failed to create checkout order.', [
                 'reservation_id' => $reservation->id,
