@@ -29,6 +29,7 @@ Route::get('/orders/{order:order_number}', [CheckoutController::class, 'success'
 Route::middleware('auth')->group(function () {
     Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
     Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
+    Route::get('/tickets/{ticket}/pdf', [TicketController::class, 'downloadPdf'])->name('tickets.pdf');
 });
 
 // Entry Staff Scanner App
