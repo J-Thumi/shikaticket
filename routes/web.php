@@ -3,6 +3,8 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Organizer\DashboardController;
+use App\Http\Controllers\Organizer\EventMarketerController;
+use App\Http\Controllers\Organizer\MarketerController;
 use App\Http\Controllers\Organizer\OrganizerEventController;
 use App\Http\Controllers\Organizer\ReportController;
 use App\Http\Controllers\OrganizerController;
@@ -76,3 +78,45 @@ Route::middleware(['auth','organizer'])->prefix('organizer')->name('organizer.')
     // Reports Route
     Route::get('/reports', [WebReportController::class, 'index'])->name('reports.index');
 });
+
+
+Route::middleware(['auth'])
+    ->prefix('organizer')
+    ->name('organizer.')
+    ->group(function () {
+
+        Route::resource(
+            'marketers',
+            MarketerController::class
+        );
+
+        Route::get(
+            'events/{event}/marketers',
+            [EventMarketerController::class, 'index']
+        )->name('events.marketers');
+
+        Route::post(    
+            'events/{event}/marketers',
+            [EventMarketerController::class, 'store']
+        )->name('events.marketers.store');
+
+        Route::delete(
+            'events/{event}/marketers/{marketer}',
+            [EventMarketerController::class, 'destroy']
+        )->name('events.marketers.destroy');
+
+        // Route::get(
+        //     'events/{event}/marketing',
+        //     [EventMarketingController::class, 'index']
+        // )->name('events.marketing');
+    });
+
+    if (app()->environment('local')) {
+    Route::prefix('test-errors')->group(function () {
+        Route::get('/403', fn () => abort(403));
+        Route::get('/404', fn () => abort(404));
+        Route::get('/419', fn () => abort(419));
+        Route::get('/500', fn () => abort(500));
+        Route::get('/503', fn () => abort(503));
+    });
+}
