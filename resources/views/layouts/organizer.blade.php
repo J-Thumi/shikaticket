@@ -73,9 +73,25 @@
                        class="px-4 py-2 rounded-xl transition-all duration-150 {{ request()->routeIs('organizer.dashboard') ? 'bg-white text-ink border border-line shadow-sm' : 'text-muted hover:text-ink hover:bg-soft' }}">
                         Dashboard
                     </a>
-                    <a href="{{ route('organizer.events.index') }}" 
-                       class="px-4 py-2 rounded-xl transition-all duration-150 {{ request()->routeIs('organizer.events.*') ? 'bg-white text-ink border border-line shadow-sm' : 'text-muted hover:text-ink hover:bg-soft' }}">
-                        Events Management
+                    
+                    <a
+                        href="{{ route('organizer.events.index') }}"
+                        class="px-4 py-2 rounded-xl transition-all duration-150
+                        {{ request()->routeIs('organizer.events.*')
+                            ? 'bg-white text-ink border border-line shadow-sm'
+                            : 'text-muted hover:text-ink hover:bg-soft' }}"
+                    >
+                        Events
+                    </a>
+
+                    <a
+                        href="{{ route('organizer.marketers.index') }}"
+                        class="px-4 py-2 rounded-xl transition-all duration-150
+                        {{ request()->routeIs('organizer.marketers.*')
+                            ? 'bg-white text-ink border border-line shadow-sm'
+                            : 'text-muted hover:text-ink hover:bg-soft' }}"
+                    >
+                        Marketing
                     </a>
                 </div>
             </div>
@@ -148,6 +164,11 @@
             </a>
             <a href="{{ route('organizer.events.index') }}" class="block px-3 py-2.5 rounded-xl text-sm font-bold {{ request()->routeIs('organizer.events.*') ? 'bg-white text-ink border border-line' : 'text-muted hover:bg-soft' }}">
                 Events Management
+            </a>
+            <a href="{{ route('organizer.marketers.index') }}" class="block px-3 py-2.5 rounded-xl text-sm font-bold {{ request()->routeIs('organizer.marketers.*')
+                    ? 'bg-white text-ink border border-line shadow-sm'
+                    : 'text-muted hover:text-ink hover:bg-soft' }}">
+                Marketing
             </a>
             <a href="{{ route('events.index') }}" target="_blank" class="block px-3 py-2.5 rounded-xl text-sm font-bold text-accent hover:bg-soft">
                 View Public Portal →
