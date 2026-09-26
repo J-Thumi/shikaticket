@@ -120,3 +120,9 @@ Route::middleware(['auth'])
         Route::get('/503', fn () => abort(503));
     });
 }
+
+Route::middleware(['auth', 'organizer'])->prefix('organizer')->name('organizer.')->group(function () {
+    // ... existing marketer routes
+    Route::post('marketers/{marketer}/payout', [App\Http\Controllers\Organizer\MarketerPayoutController::class, 'processPayout'])
+        ->name('marketers.payout');
+});
