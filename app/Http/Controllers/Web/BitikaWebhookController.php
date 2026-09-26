@@ -44,8 +44,11 @@ class BitikaWebhookController extends Controller
                     'status'  => 'successful',
                     'payload' => array_merge((array) $payment->payload, ['webhook' => $request->all()]),
                 ]);
-
-                $order->update(['status' => 'paid']);
+                if ($order->marketer_id && $order->marketer) {
+                    $commission_amount = $order->marketer->calculateCommission($order->total_amount);
+                    $order->update(['commisssion_amount' => $commission_amount]);
+                }
+                $order->update(['status' => 'paid']);                
 
                 // 2. Locate active reservation
                 
