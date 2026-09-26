@@ -45,8 +45,27 @@ class EventController extends Controller
         return view('events.index', compact('events', 'featuredEvents'));
     }
 
-    public function show(Event $event): View
+    public function show(Request $request, Event $event): View
     {
+        $referralCode = $request->query('ref');
+
+        if ($referralCode) {
+            $marketer = $event->marketers()
+                ->where('referral_code', $referralCode)
+                ->where('is_active', true)
+                ->first();
+
+            if ($marketer) {
+                session([
+                    'shikaticket_referral' => [
+                        'event_id' => $event->id,
+                        'marketer_id' => $marketer->id,
+                        'code' => $marketer->referral_code,
+                    ],
+                ]);
+            }
+        }
+
         $event->load(['organizer', 'ticketTypes' => function ($query) {
             $query->where('is_active', true);
         }]);
