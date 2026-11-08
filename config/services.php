@@ -60,4 +60,10 @@ return [
         ],
     ],
 
+    'shikaticket' => [
+        'support_email' => env('SHIKATICKET_SUPPORT_EMAIL'),
+        'support_phone' => env('SHIKATICKET_SUPPORT_PHONE'),
+    ],
+
+
 ];
