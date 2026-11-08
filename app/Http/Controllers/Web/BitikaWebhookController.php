@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
@@ -9,6 +10,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Mail\OrderTicketsMail;
+use Illuminate\Support\Facades\Mail;
 
 class BitikaWebhookController extends Controller
 {
@@ -23,10 +26,10 @@ class BitikaWebhookController extends Controller
             'status'           => $status,
             'payload'          => $request->all(),
         ]);
+
         $payment = Payment::where('transaction_reference', $transactionCode)->first();
 
         if (!$payment) {
-
             Log::warning('Payment record not found for transaction code', ['transaction_code' => $transactionCode]);
             return response()->json(['message' => 'Payment record not found'], 404);
         }
@@ -37,6 +40,8 @@ class BitikaWebhookController extends Controller
             return response()->json(['message' => 'Order already processed']);
         }
 
+        $fulfilled = false;
+
         if (in_array($status, ['fulfilled', 'paid', 'success', 'successful'])) {
             DB::transaction(function () use ($order, $payment, $request) {
                 // 1. Mark Payment and Order as successful
@@ -44,14 +49,15 @@ class BitikaWebhookController extends Controller
                     'status'  => 'successful',
                     'payload' => array_merge((array) $payment->payload, ['webhook' => $request->all()]),
                 ]);
+                
                 if ($order->marketer_id && $order->marketer) {
                     $commission_amount = $order->marketer->calculateCommission($order->total_amount);
                     $order->update(['commission_amount' => $commission_amount]);
                 }
+                
                 $order->update(['status' => 'paid']);                
 
                 // 2. Locate active reservation
-                
                 $reservation = $order->reservation;
 
                 if (!$reservation) {
@@ -60,9 +66,7 @@ class BitikaWebhookController extends Controller
                         'reservation_id' => $order->reservation_id,
                     ]);
 
-                    throw new \RuntimeException(
-                        'Reservation not found for order.'
-                    );
+                    throw new \RuntimeException('Reservation not found for order.');
                 }
 
                 $ticketType = $reservation->ticketType;
@@ -86,6 +90,7 @@ class BitikaWebhookController extends Controller
                 }
             });
 
+            $fulfilled = true;
             Log::info('Order successfully fulfilled', ['order_id' => $order->id]);
         } elseif (in_array($status, ['failed', 'cancelled'])) {
             $payment->update([
@@ -94,6 +99,24 @@ class BitikaWebhookController extends Controller
             ]);
 
             $order->update(['status' => 'failed']);
+        }
+
+        // Send email notification outside database transaction
+        if ($fulfilled) {
+            try {
+                Mail::to($order->customer_email)
+                    ->queue(new OrderTicketsMail($order->id));
+
+                Log::info('Ticket email queued successfully', [
+                    'order_id' => $order->id,
+                    'email'    => $order->customer_email,
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('Failed to queue ticket email', [
+                    'order_id' => $order->id,
+                    'error'    => $e->getMessage(),
+                ]);
+            }
         }
 
         return response()->json(['success' => true]);
