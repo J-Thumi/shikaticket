@@ -32,9 +32,8 @@ class ExpireTicketReservations extends Command
                             $reservation->status !== 'pending' ||
                             $reservation->expires_at->isFuture()
                         ) {
-                            Log::info('Skipping reservation expiration', [
-                                'reservation_id' => $reservation->id,
-                            ]);
+                            // we cannot access reservation id if it is not there is no reservation but we must log even if no reservation for debugging purposes
+                            Log::info('No reservation found for expiration');
                             return;
                         }
 
