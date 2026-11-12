@@ -20,6 +20,7 @@ class TicketReservation extends Model
         'quantity',
         'expires_at',
         'created_at',
+        'status'
     ];
 
     protected $casts = [
