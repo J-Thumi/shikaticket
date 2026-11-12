@@ -13,7 +13,7 @@ class EnsureUserIsOrganizer
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user() || ! $request->user()->organizer) {
+        if (! $request->user() || $request->user()->role !== 'organizer') {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
