@@ -1,11 +1,11 @@
+
 FROM webdevops/php-nginx:8.4
 
-##change the shell
 SHELL ["/bin/bash", "-c"]
 
 ENV PHP_MAX_EXECUTION_TIME=110
 
-# Install system dependencies first
+# Install system dependencies, including cron
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -15,61 +15,70 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     zip \
     libzip-dev \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+    cron \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js and npm
-RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
-RUN apt-get install -y nodejs
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN curl -fsSL https://getcomposer.org/installer | php \
+    -- --install-dir=/usr/local/bin --filename=composer
 
-# Copy the project files into the container
-COPY . /production/shikaticket
-
-# Set the laravel web folder
-ARG WEB_PATH=/production/shikaticket/public
-ENV WEB_DOCUMENT_ROOT=$WEB_PATH
-
-# set the correct laravel app foler
+# Application directory
 ARG LARAVEL_PATH=/production/shikaticket
-WORKDIR $LARAVEL_PATH
+ARG WEB_PATH=/production/shikaticket/public
 
+ENV WEB_DOCUMENT_ROOT=${WEB_PATH}
 
-# Create necessary directories before composer install
-RUN mkdir -p bootstrap/cache && \
-    mkdir -p storage/logs && \
-    mkdir -p storage/framework/sessions && \
-    mkdir -p storage/framework/views && \
-    mkdir -p storage/framework/cache && \
-    chmod -R 775 bootstrap/cache && \
-    chmod -R 775 storage
+WORKDIR ${LARAVEL_PATH}
+
+# Copy application
+COPY . ${LARAVEL_PATH}
+
+# Create Laravel directories
+RUN mkdir -p \
+    bootstrap/cache \
+    storage/logs \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/framework/cache
 
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Install JavaScript dependencies
+# Install frontend dependencies and build assets
 RUN npm install && npm run build
 
-COPY docker-configs/supervisord.conf /opt/docker/etc/supervisor.d/laravel.conf
+# Configure Supervisor
+COPY docker-configs/supervisord.conf \
+    /opt/docker/etc/supervisor.d/laravel.conf
 
-# Laravel specific commands
+# Configure reservation expiration cron job
+RUN echo '* * * * * application cd /production/shikaticket && /usr/local/bin/php artisan tickets:expire-reservations >> /proc/1/fd/1 2>&1' \
+    > /etc/cron.d/tickets-expiration \
+    && chmod 0644 /etc/cron.d/tickets-expiration
+
+# Laravel permissions and storage link
 RUN php artisan storage:link && \
     touch storage/logs/laravel.log && \
-    chmod -R 777 storage && \
-    chmod -R 777 public && \
-    chown -R www-data:www-data storage && \
-    chown -R www-data:www-data public && \
-    chmod -R 777 bootstrap
-
-EXPOSE 80
-
-# Create necessary directories for logging and ensure proper permissions
-RUN mkdir -p /var/log/supervisor && \
-    mkdir -p /tmp && \
-    touch /var/log/cron.log && \
+    chmod -R 775 storage bootstrap/cache && \
+    chown -R application:application storage bootstrap/cache && \
+    mkdir -p /var/log/supervisor /tmp && \
     chmod 755 /var/log/supervisor && \
     chown application:application /tmp
 
-CMD php artisan migrate --force && supervisord
+# Copy entrypoint
+COPY entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Configure entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+
+EXPOSE 80
+
+CMD ["supervisord"]
