@@ -15,6 +15,9 @@ class ExpireTicketReservations extends Command
 
     public function handle(): int
     {
+        Log::info('Reservation expiration command executed', [
+            'time' => now()->toDateTimeString(),
+        ]);
         TicketReservation::query()
             ->where('status', 'pending')
             ->where('expires_at', '<=', now())
@@ -66,6 +69,10 @@ class ExpireTicketReservations extends Command
                     });
                 }
             });
+
+        Log::info('Reservation expiration command completed', [
+            'time' => now()->toDateTimeString(),
+        ]);
 
         return self::SUCCESS;
     }
