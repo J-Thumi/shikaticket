@@ -26,9 +26,11 @@ class RegisterController extends Controller
     /**
      * Handle an incoming registration request.
      */
-    public function store(Request $request): RedirectResponse
-    {
-        Log::info('Registration request received from IP: ' . $request->ip());
+    
+    public function store(
+        Request $request,
+        \App\Services\EmailOtpService $otpService
+    ): RedirectResponse {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
@@ -36,8 +38,6 @@ class RegisterController extends Controller
             'password' => ['required', 'confirmed', Password::defaults()],
             'role' => ['required', Rule::in(['customer', 'organizer'])],
         ]);
-
-        Log::info('New user registration attempt: ' . $validated['email'] . ' with role: ' . $validated['role']);
 
         $user = User::create([
             'uuid' => (string) Str::uuid(),
@@ -48,19 +48,19 @@ class RegisterController extends Controller
             'role' => $validated['role'],
         ]);
 
-        // Auto-login user upon successful registration
-        Auth::login($user);
+        $otp = $otpService->send($user);
 
-        // Redirect based on selected role
-        if ($user->role === 'organizer') {
-            Log::info('New organizer registered: ' . $user->email);
-            return redirect()->route('organizer.create')
-                ->with('status', 'Account created! Please complete your organizer profile to continue.');
-        }
+        $request->session()->put([
+            'pending_otp_id' => $otp->id,
+            'pending_otp_user_id' => $user->id,
+            'pending_otp_remember' => false,
+            'pending_otp_fallback' => $user->role === 'organizer'
+                ? route('organizer.create')
+                : route('events.index'),
+        ]);
 
-        Log::info('New customer registered: ' . $user->email);
-
-        return redirect()->intended(route('events.index'))
-            ->with('status', 'Welcome to ShikaTicket! Your account has been created.');
+        return redirect()->route('otp.create')
+            ->with('status', 'Your account has been created. Check your email for your verification code.');
     }
+
 }

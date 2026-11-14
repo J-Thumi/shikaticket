@@ -21,8 +21,11 @@ class LoginController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(Request $request): RedirectResponse
-    {
+    
+    public function store(
+        Request $request,
+        \App\Services\EmailOtpService $otpService
+    ): RedirectResponse {
         $credentials = $request->validate([
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
@@ -30,23 +33,41 @@ class LoginController extends Controller
 
         $remember = $request->boolean('remember');
 
-        if (Auth::attempt($credentials, $remember)) {
-            $request->session()->regenerate();
+        $key = 'login:' . strtolower($credentials['email']) . ':' . $request->ip();
 
-            // Redirect users based on role if applicable, or fallback to intended/home route
-            $user = Auth::user();
-
-            if (isset($user->role) && $user->role === 'organizer') {
-                return redirect()->intended(route('organizer.dashboard'));
-            }
-
-            return redirect()->intended(route('events.index'));
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($key, 5)) {
+            return back()->withErrors([
+                'email' => 'Too many login attempts. Please try again later.',
+            ])->onlyInput('email');
         }
 
-        return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
-        ])->onlyInput('email');
+        if (!Auth::validate($credentials)) {
+            \Illuminate\Support\Facades\RateLimiter::hit($key, 60);
+
+            return back()->withErrors([
+                'email' => 'The provided credentials do not match our records.',
+            ])->onlyInput('email');
+        }
+
+        \Illuminate\Support\Facades\RateLimiter::clear($key);
+
+        $user = \App\Models\User::where('email', $credentials['email'])->firstOrFail();
+
+        $otp = $otpService->send($user);
+
+        $request->session()->put([
+            'pending_otp_id' => $otp->id,
+            'pending_otp_user_id' => $user->id,
+            'pending_otp_remember' => $remember,
+            'pending_otp_fallback' => $user->role === 'organizer'
+                ? route('organizer.dashboard')
+                : route('events.index'),
+        ]);
+
+        return redirect()->route('otp.create')
+            ->with('status', 'We have sent a verification code to your email address.');
     }
+
 
     /**
      * Destroy an authenticated session (Logout).
