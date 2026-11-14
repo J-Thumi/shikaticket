@@ -112,4 +112,9 @@ class Marketer extends Model
             'ref' => $this->referral_code,
         ]);
     }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 }
