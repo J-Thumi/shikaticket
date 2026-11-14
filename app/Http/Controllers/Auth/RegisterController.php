@@ -60,7 +60,7 @@ class RegisterController extends Controller
 
         Log::info('New customer registered: ' . $user->email);
 
-        return redirect()->route('events.index')
+        return redirect()->intended(route('events.index'))
             ->with('status', 'Welcome to ShikaTicket! Your account has been created.');
     }
 }
