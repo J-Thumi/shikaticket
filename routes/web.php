@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Marketer\MarketerDashboardController;
 use App\Http\Controllers\Organizer\DashboardController;
 use App\Http\Controllers\Organizer\EventMarketerController;
 use App\Http\Controllers\Organizer\MarketerController;
@@ -167,3 +168,31 @@ Route::middleware(['auth'])->group(function () {
             ->name('marketer-invitations.revoke');
     });
 });
+
+
+Route::middleware(['auth'])
+    ->prefix('marketer')
+    ->name('marketer.')
+    ->group(function () {
+
+        Route::get('/dashboard', [MarketerDashboardController::class, 'index'])
+            ->name('dashboard');
+
+        Route::get('/events', [MarketerDashboardController::class, 'events'])
+            ->name('events.index');
+
+        Route::get('/events/{event}', [MarketerDashboardController::class, 'showEvent'])
+            ->name('events.show');
+
+        Route::get('/sales', [MarketerDashboardController::class, 'sales'])
+            ->name('sales.index');
+
+        Route::get('/commissions', [MarketerDashboardController::class, 'commissions'])
+            ->name('commissions.index');
+
+        // Route::get('/payouts', [MarketerPayoutController::class, 'index'])
+        //     ->name('payouts.index');
+
+        // Route::get('/profile', [MarketerProfileController::class, 'edit'])
+        //     ->name('profile.edit');
+    });
