@@ -13,6 +13,8 @@ use App\Http\Controllers\Web\EventController;
 use App\Http\Controllers\Web\ReportController as WebReportController;
 use App\Http\Controllers\Web\TicketController;
 use App\Http\Controllers\Web\TicketVerificationController;
+use App\Http\Controllers\MarketerInvitationController as PublicMarketerInvitationController;
+use App\Http\Controllers\Organizer\MarketerInvitationController as OrganizerMarketerInvitationController;
 use Illuminate\Support\Facades\Route;
 
 // Public Buyer Views
@@ -125,4 +127,38 @@ Route::middleware(['auth', 'organizer'])->prefix('organizer')->name('organizer.'
     // ... existing marketer routes
     Route::post('marketers/{marketer}/payout', [App\Http\Controllers\Organizer\MarketerPayoutController::class, 'processPayout'])
         ->name('marketers.payout');
+});
+
+
+// Opening the shared link requires authentication. Laravel's auth middleware
+// stores the intended URL and returns the user here after login.
+Route::middleware(['auth'])->group(function () {
+    Route::get('/marketer-invitations/{token}', [PublicMarketerInvitationController::class, 'show'])
+        ->name('marketer-invitations.show');
+
+    Route::post('/marketer-invitations/{token}/apply', [PublicMarketerInvitationController::class, 'apply'])
+        ->name('marketer-invitations.apply');
+
+    Route::prefix('organizer')->name('organizer.')->group(function () {
+        Route::get('/events/{event}/marketer-invitations/create', [OrganizerMarketerInvitationController::class, 'create'])
+            ->name('events.marketer-invitations.create');
+
+        Route::post('/events/{event}/marketer-invitations', [OrganizerMarketerInvitationController::class, 'store'])
+            ->name('events.marketer-invitations.store');
+
+        Route::get('/marketer-invitations/{invitation}', [OrganizerMarketerInvitationController::class, 'show'])
+            ->name('marketer-invitations.show');
+
+        Route::get('/marketer-invitations/{invitation}/applications', [OrganizerMarketerInvitationController::class, 'applications'])
+            ->name('marketer-invitations.applications');
+
+        Route::post('/marketer-invitations/{invitation}/applications/{application}/approve', [OrganizerMarketerInvitationController::class, 'approve'])
+            ->name('marketer-invitations.applications.approve');
+
+        Route::post('/marketer-invitations/{invitation}/applications/{application}/reject', [OrganizerMarketerInvitationController::class, 'reject'])
+            ->name('marketer-invitations.applications.reject');
+
+        Route::post('/marketer-invitations/{invitation}/revoke', [OrganizerMarketerInvitationController::class, 'revoke'])
+            ->name('marketer-invitations.revoke');
+    });
 });
