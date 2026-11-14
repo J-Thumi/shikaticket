@@ -167,7 +167,7 @@
 
                                 <td align="right" style="padding:14px 15px; border-bottom:1px solid #e2e8f0;">
                                     <strong style="font-size:12px; color:#0f172a;">
-                                        @if($marketer->commission_type === 'percentage')
+                                        @if($marketer->commission_type === 'percent')
                                             Percentage-based
                                         @else
                                             Fixed amount
@@ -176,7 +176,7 @@
                                 </td>
                             </tr>
 
-                            @if($marketer->commission_type === 'percentage')
+                            @if($marketer->commission_type === 'percent')
                                 <tr>
                                     <td style="padding:14px 15px; border-bottom:1px solid #e2e8f0;">
                                         <span style="font-size:12px; color:#64748b;">Commission rate</span>
