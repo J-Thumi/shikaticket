@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\EmailOtpController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Marketer\MarketerDashboardController;
@@ -43,22 +44,54 @@ Route::middleware(['auth','organizer'])->group(function () {
     Route::post('/scanner/verify', [TicketVerificationController::class, 'verify'])->name('scanner.verify');
 });
 
+
 // Guest Routes
 Route::middleware('guest')->group(function () {
+
     // Login
     Route::get('/login', [LoginController::class, 'create'])->name('login');
-    Route::post('/login', [LoginController::class, 'store']);
+    Route::post('/login', [LoginController::class, 'store'])
+        ->middleware('throttle:10,1');
 
-    // Register
+    // Registration
     Route::get('/register', [RegisterController::class, 'create'])->name('register');
-    Route::post('/register', [RegisterController::class, 'store']);
+    Route::post('/register', [RegisterController::class, 'store'])
+        ->middleware('throttle:5,1');
+
+    // OTP Verification
+    Route::get('/verify-otp', [EmailOtpController::class, 'create'])
+        ->name('otp.create');
+
+    Route::post('/verify-otp', [EmailOtpController::class, 'store'])
+        ->name('otp.verify')
+        ->middleware('throttle:10,1');
+
+    Route::post('/verify-otp/resend', [EmailOtpController::class, 'resend'])
+        ->name('otp.resend')
+        ->middleware('throttle:5,1');
+
+    // Forgot Password
+    Route::get('/forgot-password', [ForgotPasswordController::class, 'create'])
+        ->name('password.request');
+
+    Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])
+        ->name('password.email')
+        ->middleware('throttle:5,1');
+
+    // Reset Password
+    Route::get('/reset-password/{token}', [ResetPasswordController::class, 'create'])
+        ->name('password.reset');
+
+    Route::post('/reset-password', [ResetPasswordController::class, 'store'])
+        ->name('password.update')
+        ->middleware('throttle:5,1');
 });
 
 // Authenticated Routes
 Route::middleware('auth')->group(function () {
-    Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+    Route::post('/logout', [LoginController::class, 'destroy'])
+        ->name('logout');
 });
-
 // Organizer profile onboarding
 Route::middleware(['auth','organizer'])->group(function () {
     Route::get('/organizer/create', [OrganizerController::class, 'create'])->name('organizer.create');
