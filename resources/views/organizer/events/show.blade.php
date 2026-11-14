@@ -31,6 +31,16 @@
                 <span>View Marketers</span>
             </a>
 
+            <a href="{{ route('organizer.events.marketer-invitations.create', $event) }}"
+            class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-accent text-white text-xs font-bold transition">
+                + Generate Invite
+            </a>
+
+            <a href="{{ route('organizer.events.marketer-invitations.index', $event) }}"
+            class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-line bg-white hover:bg-soft text-ink text-xs font-bold transition">
+                View Invitation Links
+            </a>
+
             <form action="{{ route('organizer.events.destroy', $event->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel or delete this event?')">
                 @csrf
                 @method('DELETE')
