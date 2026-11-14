@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
+use App\Notifications\ResetPasswordNotification;
 
 class User extends Authenticatable
 {
@@ -69,4 +70,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(\App\Models\Marketer::class);
     }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
+}
 }
