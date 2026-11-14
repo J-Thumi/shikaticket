@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Contracts\Encryption\DecryptException;
 
 class MarketerInvitation extends Model
 {
@@ -13,6 +15,7 @@ class MarketerInvitation extends Model
         'event_id',
         'created_by',
         'token_hash',
+        'token_encrypted',
         'commission_type',
         'fixed_commission',
         'commission_percent',
@@ -58,5 +61,25 @@ class MarketerInvitation extends Model
     {
         return $this->is_active
             && (!$this->expires_at || $this->expires_at->isFuture());
+    }
+
+    /**
+     * Generate the original public invitation URL.
+     */
+    public function getShareUrlAttribute(): ?string
+    {
+        if (!$this->token_encrypted) {
+            return null;
+        }
+
+        try {
+            $token = Crypt::decryptString($this->token_encrypted);
+
+            return route('marketer-invitations.show', [
+                'token' => $token,
+            ]);
+        } catch (DecryptException $e) {
+            return null;
+        }
     }
 }
