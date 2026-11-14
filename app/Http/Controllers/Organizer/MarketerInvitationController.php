@@ -129,27 +129,43 @@ class MarketerInvitationController extends Controller
         return view('organizer.marketer-invitations.applications', compact('invitation', 'applications'));
     }
 
-    public function approve(Request $request, MarketerInvitation $invitation, MarketerApplication $application)
-    {
+    
+    public function approve(
+        Request $request,
+        MarketerInvitation $invitation,
+        MarketerApplication $application
+    ) {
         $this->authorizeInvitation($invitation);
-        abort_unless($application->marketer_invitation_id === $invitation->id, 404);
 
-        $request->validate([
+        abort_unless(
+            $application->marketer_invitation_id === $invitation->id,
+            404
+        );
+
+        $validated = $request->validate([
             'organizer_note' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        DB::transaction(function () use ($invitation, $application, $request) {
+        $result = DB::transaction(function () use (
+            $invitation,
+            $application,
+            $validated
+        ) {
             $locked = MarketerApplication::query()
                 ->whereKey($application->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            abort_unless($locked->status === 'pending', 422, 'This application has already been reviewed.');
+            abort_unless(
+                $locked->status === 'pending',
+                422,
+                'This application has already been reviewed.'
+            );
 
             $user = $locked->user;
             $organizer = $invitation->organizer;
 
-            // Reuse this user's marketer profile for this organizer if one already exists.
+            // Reuse an existing marketer profile for this organizer.
             $marketer = $organizer->marketers()
                 ->where('user_id', $user->id)
                 ->first();
@@ -167,24 +183,45 @@ class MarketerInvitationController extends Controller
                     'is_active' => true,
                 ]);
             } else {
-                // Existing organizer marketer: preserve their existing commission settings and code.
                 $marketer->update(['is_active' => true]);
             }
 
-            // Attach only after organizer approval. Preserve any existing event pivot row.
-            $marketer->events()->syncWithoutDetaching([$invitation->event_id]);
+            // Assign the marketer to the event.
+            $marketer->events()->syncWithoutDetaching([
+                $invitation->event_id,
+            ]);
 
             $locked->update([
                 'status' => 'approved',
                 'reviewed_by' => Auth::id(),
                 'reviewed_at' => now(),
-                'organizer_note' => $request->input('organizer_note'),
+                'organizer_note' => $validated['organizer_note'] ?? null,
                 'marketer_id' => $marketer->id,
             ]);
+
+            return [
+                'user' => $user,
+                'marketer' => $marketer,
+                'event' => $invitation->event,
+            ];
         });
 
-        return back()->with('status', 'Applicant approved. Their marketer profile and referral code are now active.');
+        // Send only after the approval transaction has committed.
+        \Illuminate\Support\Facades\Mail::to($result['user']->email)
+            ->queue(new \App\Mail\MarketerApprovedMail(
+                user: $result['user'],
+                marketer: $result['marketer'],
+                event: $result['event'],
+                invitation: $invitation,
+                organizerNote: $validated['organizer_note'] ?? null,
+            ));
+
+        return back()->with(
+            'status',
+            'Applicant approved. Their marketer profile and referral code are now active.'
+        );
     }
+
 
     public function reject(Request $request, MarketerInvitation $invitation, MarketerApplication $application)
     {
