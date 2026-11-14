@@ -64,4 +64,9 @@ class User extends Authenticatable
     {
         return $this->hasManyThrough(Ticket::class, Order::class);
     }
+
+    public function marketerProfiles()
+    {
+        return $this->hasMany(\App\Models\Marketer::class);
+    }
 }

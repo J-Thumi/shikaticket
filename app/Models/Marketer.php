@@ -24,6 +24,7 @@ class Marketer extends Model
         'commission_type',
         'lightning_address',
         'is_active',
+        'user_id',
     ];
 
     protected $casts = [

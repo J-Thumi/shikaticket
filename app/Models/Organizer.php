@@ -36,4 +36,8 @@ class Organizer extends Model
     {
         return $this->hasMany(Marketer::class);
     }
+    public function marketerInvitations()
+    {
+        return $this->hasMany(\App\Models\MarketerInvitation::class);
+    }
 }

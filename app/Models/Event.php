@@ -94,4 +94,8 @@ class Event extends Model
             return ($remaining / $ticket->total_quantity) < 0.20; // Less than 20% tickets remaining
         });
     }
+    public function marketerInvitations()
+    {
+        return $this->hasMany(\App\Models\MarketerInvitation::class);
+    }
 }
