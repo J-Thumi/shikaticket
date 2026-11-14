@@ -143,6 +143,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/events/{event}/marketer-invitations/create', [OrganizerMarketerInvitationController::class, 'create'])
             ->name('events.marketer-invitations.create');
 
+        Route::get('/events/{event}/marketer-invitations', [
+            OrganizerMarketerInvitationController::class,
+            'index'
+        ])->name('events.marketer-invitations.index');
+
         Route::post('/events/{event}/marketer-invitations', [OrganizerMarketerInvitationController::class, 'store'])
             ->name('events.marketer-invitations.store');
 
