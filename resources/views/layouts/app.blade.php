@@ -78,6 +78,9 @@
 
             <!-- Desktop Navigation Actions -->
             <div class="hidden md:flex items-center gap-3">
+                <a href="{{ route('marketer.dashboard') }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold text-ink bg-white border border-line hover:bg-soft rounded-xl transition shadow-sm">
+                    Marketer Dashboard
+                </a>
                 @auth
                     {{-- Visible ONLY to Organizers --}}
                     @if (Auth::user()->organizer)
@@ -85,7 +88,7 @@
                             <svg class="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                             </svg>
-                            Dashboard
+                            Organiser Dashboard
                         </a>
 
                         <a href="{{ route('scanner.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-ink bg-soft hover:bg-line rounded-xl transition">
@@ -160,10 +163,16 @@
         <!-- Mobile Navigation Drawer -->
         <div x-show="mobileMenuOpen" x-cloak class="md:hidden border-b border-line bg-paper px-4 pt-3 pb-5 space-y-3 shadow-lg">
             <a href="{{ route('events.index') }}" class="block px-3 py-2 rounded-lg text-sm font-bold text-ink hover:bg-soft">Explore Events</a>
-            
-            
+
+            <a href="{{ route('marketer.dashboard') }}" class="block px-3 py-2 rounded-lg text-sm font-bold text-ink hover:bg-soft">
+                Marketer Dashboard
+            </a>
+
             @auth
                 @if (Auth::user()->organizer)
+                    <a href="{{ route('organizer.dashboard') }}" class="block px-3 py-2 rounded-lg text-sm font-bold text-ink hover:bg-soft">
+                        Organizer Dashboard
+                    </a>
                     <a href="{{ route('organizer.dashboard') }}" class="block px-3 py-2 rounded-lg text-sm font-bold text-ink hover:bg-soft">
                         Organizer Dashboard
                     </a>
