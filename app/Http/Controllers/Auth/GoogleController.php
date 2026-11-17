@@ -167,11 +167,13 @@ class GoogleController extends Controller
                 'max:20',
                 'unique:users,phone',
             ],
-
             'role' => [
                 'required',
                 Rule::in(['customer', 'organizer', 'marketer']),
             ],
+            'terms' => ['required', 'accepted'],
+        ], [
+            'terms.accepted' => 'You must accept the terms of service and privacy policy to continue.',
         ]);
 
         // Prevent duplicate accounts.
@@ -187,7 +189,7 @@ class GoogleController extends Controller
                 ]);
         }
 
-        // Create a fully verified Google account.
+        // Create a fully verified Google account with consent timestamp.
         $user = User::create([
             'uuid' => (string) Str::uuid(),
             'name' => $googleData['name'],
@@ -198,6 +200,7 @@ class GoogleController extends Controller
             'google_id' => $googleData['google_id'],
             'google_avatar' => $googleData['avatar'],
             'email_verified_at' => now(),
+            'terms_accepted_at' => now(),
         ]);
 
         $request->session()->forget('google_registration');

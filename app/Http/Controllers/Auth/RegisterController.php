@@ -37,6 +37,9 @@ class RegisterController extends Controller
             'phone' => ['required', 'string', 'max:20', 'unique:users'],
             'password' => ['required', 'confirmed', Password::defaults()],
             'role' => ['required', Rule::in(['customer', 'organizer', 'marketer'])],
+            'terms' => ['required', 'accepted'],
+        ], [
+            'terms.accepted' => 'You must accept the terms of service and privacy policy to complete registration.',
         ]);
 
         $user = User::create([
@@ -46,6 +49,7 @@ class RegisterController extends Controller
             'phone' => $validated['phone'],
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
+            'terms_accepted_at' => now(),
         ]);
 
         $otp = $otpService->send($user);
