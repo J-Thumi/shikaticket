@@ -184,6 +184,28 @@
             </div>
         </form>
 
+
+        <!-- Google Registration -->
+        <div class="relative flex items-center">
+            <div class="flex-grow border-t border-line"></div>
+            <span class="px-3 text-xs text-muted">OR</span>
+            <div class="flex-grow border-t border-line"></div>
+        </div>
+
+        <a href="{{ route('google.redirect', ['intent' => 'register']) }}"
+        class="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border border-line rounded-xl text-xs font-bold text-ink hover:bg-paper hover:border-accent transition">
+
+            <svg class="w-5 h-5" viewBox="0 0 48 48">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 3.07 13.22l7.98 6.19C12.73 13.72 17.87 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.77 7.18l7.73 6C44.4 37.88 46.98 31.7 46.98 24.55z"/>
+                <path fill="#FBBC05" d="M10.05 28.59A14.4 14.4 0 0 1 9.27 24c0-1.59.28-3.13.78-4.59l-7.98-6.19A23.92 23.92 0 0 0 0 24c0 3.86.92 7.52 2.55 10.78l7.5-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.9-5.8l-7.73-6c-2.15 1.45-4.9 2.3-8.17 2.3-6.13 0-11.27-4.22-12.95-9.91l-7.5 6.19C7.01 43.3 14.91 48 24 48z"/>
+            </svg>
+
+            Sign up with Google
+        </a>
+
+
         <!-- Footer -->
         <p class="text-center text-xs text-muted">
             Already have an account? 

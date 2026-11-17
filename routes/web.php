@@ -88,7 +88,31 @@ Route::middleware('guest')->group(function () {
         ->name('password.update')
         ->middleware('throttle:5,1');
 });
+// Google Authentication
+Route::prefix('auth/google')->name('google.')->group(function () {
 
+    Route::get('/redirect', [
+        \App\Http\Controllers\Auth\GoogleController::class,
+        'redirect'
+    ])->name('redirect');
+
+    Route::get('/callback', [
+        \App\Http\Controllers\Auth\GoogleController::class,
+        'callback'
+    ])->name('callback');
+
+    // Complete registration for new Google users
+    Route::get('/complete', [
+        \App\Http\Controllers\Auth\GoogleController::class,
+        'complete'
+    ])->name('complete');
+
+    Route::post('/complete', [
+        \App\Http\Controllers\Auth\GoogleController::class,
+        'store'
+    ])->name('complete.store')
+      ->middleware('throttle:5,1');
+});
 // Authenticated Routes
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])
