@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Services\EmailOtpService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +18,7 @@ class GoogleController extends Controller
     /**
      * Redirect the user to Google.
      */
-    public function redirect(Request $request)
+    public function redirect(Request $request): RedirectResponse
     {
         $intent = $request->query('intent', 'login');
 
@@ -37,12 +36,11 @@ class GoogleController extends Controller
     /**
      * Handle Google's callback.
      */
-    public function callback(
-        Request $request,
-        EmailOtpService $otpService
-    ): RedirectResponse {
-
+    public function callback(Request $request): RedirectResponse
+    {
         if ($request->has('error')) {
+            $request->session()->forget('google_auth_intent');
+
             return redirect()->route('login')
                 ->withErrors([
                     'email' => 'Google authentication was cancelled or denied.',
@@ -51,6 +49,7 @@ class GoogleController extends Controller
 
         try {
             $googleUser = Socialite::driver('google')->user();
+
         } catch (Throwable $e) {
             report($e);
 
@@ -60,7 +59,7 @@ class GoogleController extends Controller
                 ]);
         }
 
-        // Only accept verified Google email addresses.
+        // Ensure Google provides a verified email.
         if (
             empty($googleUser->email) ||
             !filter_var($googleUser->email, FILTER_VALIDATE_EMAIL) ||
@@ -74,13 +73,12 @@ class GoogleController extends Controller
 
         $email = strtolower($googleUser->email);
 
-        // First check whether this Google account is already linked.
-        $user = User::where('google_id', $googleUser->getId())
-            ->first();
+        // 1. Find an account already linked to this Google account.
+        $user = User::where('google_id', $googleUser->getId())->first();
 
         if ($user) {
 
-            // Do not silently change an existing account's email.
+            // Ensure the linked account email matches.
             if (strtolower($user->email) !== $email) {
                 return redirect()->route('login')
                     ->withErrors([
@@ -90,13 +88,13 @@ class GoogleController extends Controller
 
         } else {
 
-            // Check whether an ordinary ShikaTicket account
-            // already exists with this verified email.
+            // 2. Check whether an ordinary account already exists.
             $user = User::where('email', $email)->first();
 
             if ($user) {
 
-                // Do not overwrite another Google association.
+                // Do not link a Google account already associated
+                // with a different Google identity.
                 if ($user->google_id !== null) {
                     return redirect()->route('login')
                         ->withErrors([
@@ -104,15 +102,16 @@ class GoogleController extends Controller
                         ]);
                 }
 
-                // Link Google to the existing account.
+                // Link the verified Google identity.
                 $user->forceFill([
                     'google_id' => $googleUser->getId(),
                     'google_avatar' => $googleUser->getAvatar(),
+                    'email_verified_at' => $user->email_verified_at ?? now(),
                 ])->save();
 
             } else {
 
-                // New Google user: collect missing registration details.
+                // 3. New Google user: collect missing registration details.
                 $request->session()->put('google_registration', [
                     'google_id' => $googleUser->getId(),
                     'name' => $googleUser->getName() ?: 'Google User',
@@ -124,13 +123,14 @@ class GoogleController extends Controller
             }
         }
 
-        // Use the same OTP verification flow as normal login.
-        return $this->sendOtp(
-            $request,
-            $user,
-            $otpService,
-            false
-        );
+        // 4. Google has verified ownership of the email.
+        $user->forceFill([
+            'email_verified_at' => $user->email_verified_at ?? now(),
+            'google_avatar' => $googleUser->getAvatar(),
+        ])->save();
+
+        // 5. Authenticate immediately. No OTP required.
+        return $this->authenticateUser($request, $user, false);
     }
 
     /**
@@ -152,11 +152,8 @@ class GoogleController extends Controller
     /**
      * Complete Google registration.
      */
-    public function store(
-        Request $request,
-        EmailOtpService $otpService
-    ): RedirectResponse {
-
+    public function store(Request $request): RedirectResponse
+    {
         $googleData = $request->session()->get('google_registration');
 
         if (!$googleData) {
@@ -177,17 +174,20 @@ class GoogleController extends Controller
             ],
         ]);
 
-        // Check for a concurrent account creation.
+        // Prevent duplicate accounts.
         if (
             User::where('email', $googleData['email'])->exists() ||
             User::where('google_id', $googleData['google_id'])->exists()
         ) {
+            $request->session()->forget('google_registration');
+
             return redirect()->route('login')
                 ->withErrors([
                     'email' => 'An account with this Google email already exists. Please sign in.',
                 ]);
         }
 
+        // Create a fully verified Google account.
         $user = User::create([
             'uuid' => (string) Str::uuid(),
             'name' => $googleData['name'],
@@ -197,49 +197,54 @@ class GoogleController extends Controller
             'role' => $validated['role'],
             'google_id' => $googleData['google_id'],
             'google_avatar' => $googleData['avatar'],
+            'email_verified_at' => now(),
         ]);
 
         $request->session()->forget('google_registration');
 
-        return $this->sendOtp(
-            $request,
-            $user,
-            $otpService,
-            true
-        );
+        // Authenticate immediately. No OTP required.
+        return $this->authenticateUser($request, $user, true);
     }
 
     /**
-     * Start the existing OTP verification process.
+     * Authenticate the Google user and redirect according to role.
      */
-    private function sendOtp(
+    private function authenticateUser(
         Request $request,
         User $user,
-        EmailOtpService $otpService,
         bool $registration
     ): RedirectResponse {
 
-        $otp = $otpService->send($user);
-
-        $fallback = $registration
-            ? ($user->role === 'organizer'
-                ? route('organizer.create')
-                : route('events.index'))
-            : ($user->role === 'organizer'
-                ? route('organizer.dashboard')
-                : route('events.index'));
-
-        $request->session()->put([
-            'pending_otp_id' => $otp->id,
-            'pending_otp_user_id' => $user->id,
-            'pending_otp_remember' => false,
-            'pending_otp_fallback' => $fallback,
+        // Remove any unfinished normal-login OTP state.
+        $request->session()->forget([
+            'pending_otp_id',
+            'pending_otp_user_id',
+            'pending_otp_remember',
+            'pending_otp_fallback',
+            'google_auth_intent',
+            'google_registration',
         ]);
 
-        return redirect()->route('otp.create')
+        Auth::login($user, false);
+
+        // Regenerate session ID after authentication.
+        $request->session()->regenerate();
+
+        // Preserve role-based navigation.
+        if ($user->role === 'organizer') {
+            $destination = $registration
+                ? route('organizer.create')
+                : route('organizer.dashboard');
+        } else {
+            $destination = route('events.index');
+        }
+
+        return redirect()->to($destination)
             ->with(
                 'status',
-                'A verification code has been sent to your email address.'
+                $registration
+                    ? 'Your ShikaTicket account has been created successfully!'
+                    : 'You have successfully signed in with Google.'
             );
     }
 }
