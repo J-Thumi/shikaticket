@@ -246,9 +246,9 @@
                     <h4 class="text-xs font-bold text-[#85858b] uppercase tracking-wider mb-4">Support & Legal</h4>
                     <ul class="space-y-2.5 text-xs text-[#c9c9cc]">
                         <li><a href="#" class="hover:text-white transition">Help center</a></li>
-                        <li><a href="#" class="hover:text-white transition">Terms of Service</a></li>
-                        <li><a href="#" class="hover:text-white transition">Privacy Policy</a></li>
-                        <li><a href="#" class="hover:text-white transition">Contact us</a></li>
+                        <li><a href="{{ route('legal.terms') }}" class="hover:text-white transition">Terms of Service</a></li>
+                        <li><a href="{{ route('legal.privacy') }}" class="hover:text-white transition">Privacy Policy</a></li>
+                        <li><a href="{{ route('legal.contact') }}" class="hover:text-white transition">Contact us</a></li>
                     </ul>
                 </div>
             </div>

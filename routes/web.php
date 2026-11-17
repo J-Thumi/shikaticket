@@ -124,6 +124,10 @@ Route::middleware(['auth','organizer'])->group(function () {
     Route::post('/organizer', [OrganizerController::class, 'store'])->name('organizer.store');
 });
 
+Route::view('/terms', 'legal.terms')->name('legal.terms');
+Route::view('/privacy', 'legal.privacy')->name('legal.privacy');
+Route::view('/contact', 'legal.contact')->name('legal.contact');
+
 // Organizer Backstage
 Route::middleware(['auth','organizer'])->prefix('organizer')->name('organizer.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

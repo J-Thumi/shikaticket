@@ -175,6 +175,28 @@
                 </div>
             </div>
 
+            <!-- Terms & Privacy Consent Checkbox -->
+            <div class="space-y-1.5 pt-1">
+                <div class="flex items-start gap-2.5">
+                    <input
+                        id="terms"
+                        name="terms"
+                        type="checkbox"
+                        required
+                        value="1"
+                        {{ old('terms') ? 'checked' : '' }}
+                        class="mt-0.5 h-4 w-4 rounded border-line text-accent focus:ring-accent">
+                    
+                    <label for="terms" class="text-xs text-muted leading-relaxed">
+                        I agree to the <a href="{{ route('legal.terms') }}" target="_blank" class="text-accent font-bold hover:underline">Terms of Service</a> and <a href="{{ route('legal.privacy') }}" target="_blank" class="text-accent font-bold hover:underline">Privacy Policy</a>, and consent to the collection and processing of my data in accordance with Kenyan data protection laws.
+                    </label>
+                </div>
+
+                @error('terms')
+                    <p class="text-xs text-rose-600">{{ $message }}</p>
+                @enderror
+            </div>
+
             <!-- Submit Button -->
             <div class="pt-3">
                 <button type="submit"

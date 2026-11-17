@@ -90,8 +90,11 @@ class Event extends Model
     {
         return $this->ticketTypes->contains(function ($ticket) {
             if ($ticket->total_quantity <= 0) return false;
+            
+            // Corrected calculation:
             $remaining = $ticket->total_quantity - ($ticket->sold_quantity + $ticket->reserved_quantity);
-            return ($remaining / $ticket->total_quantity) < 0.20; // Less than 20% tickets remaining
+            
+            return ($remaining / $ticket->total_quantity) < 0.20; 
         });
     }
     public function marketerInvitations()

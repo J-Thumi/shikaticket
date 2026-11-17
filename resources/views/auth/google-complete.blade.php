@@ -1,4 +1,3 @@
-
 @extends('layouts.app')
 
 @section('content')
@@ -59,7 +58,6 @@
                     <p class="text-xs text-rose-600">{{ $message }}</p>
                 @enderror
             </div>
-
             <div class="space-y-1.5">
                 <label for="phone" class="block text-xs font-bold text-ink">
                     Phone Number (M-Pesa)
@@ -81,6 +79,28 @@
                 </div>
 
                 @error('phone')
+                    <p class="text-xs text-rose-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Terms & Privacy Consent Checkbox -->
+            <div class="space-y-1.5 pt-1">
+                <div class="flex items-start gap-2.5">
+                    <input
+                        id="google_terms"
+                        name="terms"
+                        type="checkbox"
+                        required
+                        value="1"
+                        {{ old('terms') ? 'checked' : '' }}
+                        class="mt-0.5 h-4 w-4 rounded border-line text-accent focus:ring-accent">
+                    
+                    <label for="google_terms" class="text-xs text-muted leading-relaxed">
+                        I agree to the <a href="{{ route('legal.terms') }}" target="_blank" class="text-accent font-bold hover:underline">Terms of Service</a> and <a href="{{ route('legal.privacy') }}" target="_blank" class="text-accent font-bold hover:underline">Privacy Policy</a>.
+                    </label>
+                </div>
+
+                @error('terms')
                     <p class="text-xs text-rose-600">{{ $message }}</p>
                 @enderror
             </div>
